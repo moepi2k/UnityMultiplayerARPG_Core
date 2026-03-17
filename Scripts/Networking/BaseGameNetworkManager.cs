@@ -97,8 +97,10 @@ namespace MultiplayerARPG
         protected bool _isReadyToInstantiatePlayers { get { return _isServerReadyToInstantiatePlayers; } set { _isServerReadyToInstantiatePlayers = value; } }
         protected bool _isServerReadyToInstantiatePlayers;
 
-        protected ConcurrentDictionary<uint, UITextKeys> _enterGameRequestResponseMessages = new ConcurrentDictionary<uint, UITextKeys>();
-        protected ConcurrentDictionary<uint, UITextKeys> _clientReadyRequestResponseMessages = new ConcurrentDictionary<uint, UITextKeys>();
+        protected readonly ConcurrentDictionary<uint, UITextKeys> _enterGameRequestResponseMessages = new ConcurrentDictionary<uint, UITextKeys>();
+        protected readonly ConcurrentDictionary<uint, UITextKeys> _clientReadyRequestResponseMessages = new ConcurrentDictionary<uint, UITextKeys>();
+        protected readonly ConcurrentDictionary<uint, IEntityMovementDataHandler> _entityMovementDataHandlers = new ConcurrentDictionary<uint, IEntityMovementDataHandler>();
+        public ConcurrentDictionary<uint, IEntityMovementDataHandler> EntityMovementDataHandlers => _entityMovementDataHandlers;
 
         protected override void Awake()
         {
@@ -199,6 +201,7 @@ namespace MultiplayerARPG
             _clientReadyToInstantiateObjectsStates.Clear();
             _enterGameRequestResponseMessages.Clear();
             _clientReadyRequestResponseMessages.Clear();
+            _entityMovementDataHandlers.Clear();
             _isServerReadyToInstantiateObjects = false;
             _isClientReadyToInstantiateObjects = false;
             _isServerReadyToInstantiatePlayers = false;
@@ -559,16 +562,16 @@ namespace MultiplayerARPG
         {
             uint objectId = messageHandler.Reader.GetPackedUInt();
             long peerTimestamp = messageHandler.Reader.GetPackedLong();
-            if (Assets.TryGetSpawnedObject(objectId, out BaseGameEntity gameEntity) && gameEntity.Identity.ConnectionId == messageHandler.ConnectionId)
-                gameEntity.ReadClientStateAtServer(peerTimestamp, messageHandler.Reader);
+            if (_entityMovementDataHandlers.TryGetValue(objectId, out IEntityMovementDataHandler dataHandler) && dataHandler.ConnectionId == messageHandler.ConnectionId)
+                dataHandler.ReadClientStateAtServer(peerTimestamp, messageHandler.Reader);
         }
 
         protected void HandleServerEntityStateAtClient(MessageHandlerData messageHandler)
         {
             uint objectId = messageHandler.Reader.GetPackedUInt();
             long peerTimestamp = messageHandler.Reader.GetPackedLong();
-            if (Assets.TryGetSpawnedObject(objectId, out BaseGameEntity gameEntity))
-                gameEntity.ReadServerStateAtClient(peerTimestamp, messageHandler.Reader);
+            if (_entityMovementDataHandlers.TryGetValue(objectId, out IEntityMovementDataHandler dataHandler))
+                dataHandler.ReadServerStateAtClient(peerTimestamp, messageHandler.Reader);
         }
 
         public virtual void InitPrefabs()

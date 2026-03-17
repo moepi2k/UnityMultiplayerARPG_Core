@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Insthync.ManagedUpdating;
+using LiteNetLib;
 using LiteNetLib.Utils;
 using LiteNetLibManager;
 using Unity.Profiling;
@@ -10,7 +11,7 @@ using UnityEngine.AI;
 namespace MultiplayerARPG
 {
     [RequireComponent(typeof(NavMeshAgent))]
-    public class NavMeshEntityMovement : BaseNetworkedGameEntityComponent<BaseGameEntity>, IEntityMovementComponent, IManagedUpdate
+    public class NavMeshEntityMovement : BaseNetworkedGameEntityComponent<BaseGameEntity>, IEntityMovementComponent, IEntityMovementDataHandler, IManagedUpdate
     {
         protected const float MIN_MAGNITUDE_TO_DETERMINE_MOVING = 0.01f;
         protected const float MIN_DISTANCE_TO_SIMULATE_MOVEMENT = 0.01f;
@@ -40,6 +41,8 @@ namespace MultiplayerARPG
         public ExtraMovementState ExtraMovementState { get; protected set; }
         public DirectionVector2 Direction2D { get { return Vector2.down; } set { } }
         public float CurrentMoveSpeed { get { return CacheNavMeshAgent.isStopped ? 0f : CacheNavMeshAgent.speed; } }
+
+        private LogicUpdater _logicUpdater;
 
         // Input codes
         protected bool _isDashing;
@@ -123,6 +126,89 @@ namespace MultiplayerARPG
         {
             CacheNavMeshAgent.enabled = false;
             UpdateManager.Unregister(this);
+        }
+
+        public override void OnIdentityInitialize()
+        {
+            RemoveTickEvents();
+            Entity.CurrentGameManager.EntityMovementDataHandlers.TryRemove(ObjectId, out _);
+            _logicUpdater = Entity.Manager.LogicUpdater;
+            AddTickEvents();
+            Entity.CurrentGameManager.EntityMovementDataHandlers.TryAdd(ObjectId, this);
+        }
+
+        public override void OnNetworkDestroy(byte reasons)
+        {
+            RemoveTickEvents();
+            Entity.CurrentGameManager.EntityMovementDataHandlers.TryRemove(ObjectId, out _);
+        }
+
+        private void AddTickEvents()
+        {
+            if (_logicUpdater == null)
+                return;
+            _logicUpdater.OnTick += OnTickServer;
+            _logicUpdater.OnTick += OnTickClient;
+        }
+
+        private void RemoveTickEvents()
+        {
+            if (_logicUpdater == null)
+                return;
+            _logicUpdater.OnTick -= OnTickServer;
+            _logicUpdater.OnTick -= OnTickClient;
+        }
+
+        private void OnTickServer(LogicUpdater updater)
+        {
+            if (!IsServer)
+                return;
+            if (!Entity.isActiveAndEnabled)
+                return;
+            if (!isActiveAndEnabled)
+                return;
+            if (!Entity.IsUpdateEntityComponents)
+                return;
+            SendServerState(Entity.Manager.ServerTimestamp);
+        }
+
+        private void OnTickClient(LogicUpdater updater)
+        {
+            if (IsServer)
+                return;
+            if (!IsOwnerClient)
+                return;
+            if (!Entity.isActiveAndEnabled)
+                return;
+            if (!isActiveAndEnabled)
+                return;
+            SendClientState(Entity.Manager.ServerTimestamp);
+        }
+
+        private void SendClientState(long writeTimestamp)
+        {
+            EntityMovementDataBuffers.StateDataWriter.Reset();
+            if (WriteClientState(writeTimestamp, EntityMovementDataBuffers.StateDataWriter, out bool shouldSendReliably))
+            {
+                TransportHandler.WritePacket(EntityMovementDataBuffers.StateMessageWriter, GameNetworkingConsts.EntityState);
+                EntityMovementDataBuffers.StateMessageWriter.PutPackedUInt(Entity.ObjectId);
+                EntityMovementDataBuffers.StateMessageWriter.PutPackedLong(writeTimestamp);
+                EntityMovementDataBuffers.StateMessageWriter.Put(EntityMovementDataBuffers.StateDataWriter.Data, 0, EntityMovementDataBuffers.StateDataWriter.Length);
+                Entity.ClientSendMessage(BaseGameEntity.MOVEMENT_DATA_CHANNEL, shouldSendReliably ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Unreliable, EntityMovementDataBuffers.StateMessageWriter);
+            }
+        }
+
+        private void SendServerState(long writeTimestamp)
+        {
+            EntityMovementDataBuffers.StateDataWriter.Reset();
+            if (WriteServerState(writeTimestamp, EntityMovementDataBuffers.StateDataWriter, out bool shouldSendReliably))
+            {
+                TransportHandler.WritePacket(EntityMovementDataBuffers.StateMessageWriter, GameNetworkingConsts.EntityState);
+                EntityMovementDataBuffers.StateMessageWriter.PutPackedUInt(Entity.ObjectId);
+                EntityMovementDataBuffers.StateMessageWriter.PutPackedLong(writeTimestamp);
+                EntityMovementDataBuffers.StateMessageWriter.Put(EntityMovementDataBuffers.StateDataWriter.Data, 0, EntityMovementDataBuffers.StateDataWriter.Length);
+                Entity.ServerSendMessageToSubscribers(BaseGameEntity.MOVEMENT_DATA_CHANNEL, shouldSendReliably ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Unreliable, EntityMovementDataBuffers.StateMessageWriter);
+            }
         }
 
         public void KeyMovement(Vector3 moveDirection, MovementState movementState)

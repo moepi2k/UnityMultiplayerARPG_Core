@@ -260,16 +260,6 @@ namespace MultiplayerARPG
             }
         }
 
-        public override void SendServerState(long writeTimestamp)
-        {
-            if (!IsUpdateEntityComponents)
-            {
-                // Don't updates while there is no subscribers
-                return;
-            }
-            base.SendServerState(writeTimestamp);
-        }
-
         public virtual void InitStats()
         {
             _isDestroyed = false;

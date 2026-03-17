@@ -16,8 +16,6 @@ namespace MultiplayerARPG
     {
         public const byte MOVEMENT_DATA_CHANNEL = 2;
         public const byte ACTION_DATA_CHANNEL = 3;
-        protected static readonly NetDataWriter s_EntityStateMessageWriter = new NetDataWriter();
-        protected static readonly NetDataWriter s_EntityStateDataWriter = new NetDataWriter();
         protected static readonly ProfilerMarker s_EntityUpdateProfilerMarker = new ProfilerMarker("BaseGameEntity - EntityUpdate");
         protected static readonly ProfilerMarker s_OnUpdateInvokeProfilerMarker = new ProfilerMarker("BaseGameEntity - OnUpdateInvoke");
         protected static readonly ProfilerMarker s_ComponentsChangedStateUpdateProfilerMarker = new ProfilerMarker("BaseGameEntity - ComponentsChangedStateUpdate");
@@ -193,7 +191,7 @@ namespace MultiplayerARPG
         public readonly HashSet<object> MovementDisablers = new HashSet<object>();
         public bool DisableMovement => MovementDisablers.Count > 0;
 
-        protected virtual bool IsUpdateEntityComponents
+        public virtual bool IsUpdateEntityComponents
         {
             get
             {
@@ -203,7 +201,6 @@ namespace MultiplayerARPG
             }
         }
 
-        protected LogicUpdater _logicUpdater;
         protected bool _isTeleporting;
         protected bool _stillMoveAfterTeleport;
         protected Vector3 _teleportingPosition;
@@ -264,32 +261,6 @@ namespace MultiplayerARPG
         {
             if (onIdentityInitialize != null)
                 onIdentityInitialize.Invoke();
-            if (_logicUpdater == null)
-            {
-                _logicUpdater = Manager.LogicUpdater;
-                _logicUpdater.OnTick += OnTickServer;
-                _logicUpdater.OnTick += OnTickClient;
-            }
-        }
-
-        private void OnTickServer(LogicUpdater updater)
-        {
-            if (!isActiveAndEnabled)
-                return;
-            if (!IsServer)
-                return;
-            SendServerState(Manager.ServerTimestamp);
-        }
-
-        private void OnTickClient(LogicUpdater updater)
-        {
-            if (!isActiveAndEnabled)
-                return;
-            if (IsServer)
-                return;
-            if (!IsOwnerClient)
-                return;
-            SendClientState(Manager.ServerTimestamp);
         }
 
         private void OnDestroy()
@@ -299,11 +270,6 @@ namespace MultiplayerARPG
                 onDestroy.Invoke();
             this.InvokeInstanceDevExtMethods("OnDestroy");
             Clean();
-            if (_logicUpdater != null)
-            {
-                _logicUpdater.OnTick -= OnTickServer;
-                _logicUpdater.OnTick -= OnTickClient;
-            }
         }
         protected virtual void EntityOnDestroy()
         {
@@ -488,52 +454,6 @@ namespace MultiplayerARPG
                 Teleport(_teleportingPosition, _teleportingRotation, _stillMoveAfterTeleport);
                 _isTeleporting = false;
             }
-        }
-
-        public virtual void SendClientState(long writeTimestamp)
-        {
-            if (Movement != null && Movement.enabled)
-            {
-                bool shouldSendReliably;
-                s_EntityStateDataWriter.Reset();
-                if (Movement.WriteClientState(writeTimestamp, s_EntityStateDataWriter, out shouldSendReliably))
-                {
-                    TransportHandler.WritePacket(s_EntityStateMessageWriter, GameNetworkingConsts.EntityState);
-                    s_EntityStateMessageWriter.PutPackedUInt(ObjectId);
-                    s_EntityStateMessageWriter.PutPackedLong(writeTimestamp);
-                    s_EntityStateMessageWriter.Put(s_EntityStateDataWriter.Data, 0, s_EntityStateDataWriter.Length);
-                    ClientSendMessage(MOVEMENT_DATA_CHANNEL, shouldSendReliably ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Sequenced, s_EntityStateMessageWriter);
-                }
-            }
-        }
-
-        public virtual void SendServerState(long writeTimestamp)
-        {
-            if (Movement != null && Movement.enabled)
-            {
-                bool shouldSendReliably;
-                s_EntityStateDataWriter.Reset();
-                if (Movement.WriteServerState(writeTimestamp, s_EntityStateDataWriter, out shouldSendReliably))
-                {
-                    TransportHandler.WritePacket(s_EntityStateMessageWriter, GameNetworkingConsts.EntityState);
-                    s_EntityStateMessageWriter.PutPackedUInt(ObjectId);
-                    s_EntityStateMessageWriter.PutPackedLong(writeTimestamp);
-                    s_EntityStateMessageWriter.Put(s_EntityStateDataWriter.Data, 0, s_EntityStateDataWriter.Length);
-                    ServerSendMessageToSubscribers(MOVEMENT_DATA_CHANNEL, shouldSendReliably ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Sequenced, s_EntityStateMessageWriter);
-                }
-            }
-        }
-
-        public virtual void ReadClientStateAtServer(long peerTimestamp, NetDataReader reader)
-        {
-            if (Movement != null)
-                Movement.ReadClientStateAtServer(peerTimestamp, reader);
-        }
-
-        public virtual void ReadServerStateAtClient(long peerTimestamp, NetDataReader reader)
-        {
-            if (Movement != null)
-                Movement.ReadServerStateAtClient(peerTimestamp, reader);
         }
 
         protected virtual void OnValidate()
