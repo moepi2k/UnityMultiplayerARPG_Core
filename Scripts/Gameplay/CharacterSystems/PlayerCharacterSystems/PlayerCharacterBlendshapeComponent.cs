@@ -141,7 +141,8 @@ namespace MultiplayerARPG
             _currentValues[optionIndex] = value;
             Applying = true;
             // Save to entity's `PublicFloats`
-            Entity.SetPublicFloat32(GetHashedSettingId(options[optionIndex]), value);
+            int hashedSettingId = GetHashedSettingId(options[optionIndex]);
+            Entity.SetPublicFloat32(hashedSettingId, value);
         }
 
         public float GetData(int optionIndex)
