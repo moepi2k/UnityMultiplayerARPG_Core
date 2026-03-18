@@ -1,5 +1,4 @@
-﻿using Insthync.AddressableAssetTools;
-using Insthync.UnityEditorUtils;
+﻿using Insthync.UnityEditorUtils;
 using LiteNetLibManager;
 using NotifiableCollection;
 using System.Collections.Generic;
@@ -571,9 +570,6 @@ namespace MultiplayerARPG
             publicFloats.onOperation -= OnPublicFloatsOperation;
 #endif
             guildSkills.onOperation -= OnGuildSkillsOperation;
-
-            if (IsOwnerClient && BasePlayerCharacterController.Singleton != null)
-                Destroy(BasePlayerCharacterController.Singleton.gameObject);
 
             // Unsubscribe this entity
             if (GameInstance.ClientCharacterHandlers != null)
