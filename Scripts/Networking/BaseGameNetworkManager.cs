@@ -700,12 +700,24 @@ namespace MultiplayerARPG
                         tempLastPosition = unreliableWriter.Length;
                         // If packet will too big, send created one then re-create a new packet
                         const byte intSize = 4;
-                        if (tempLastPosition + EntityMovementDataBuffers.StateDataWriter.Length + intSize > MAX_UNRELIABLE_PACKET_SIZE)
+                        if (tempLastPosition + EntityMovementDataBuffers.StateDataWriter.Length + intSize >= MAX_UNRELIABLE_PACKET_SIZE)
                         {
                             unreliableWriter.SetPosition(posBeforeWriteUnreliableStateCount);
                             unreliableWriter.Put(unreliableStateCount);
                             unreliableWriter.SetPosition(tempLastPosition);
-                            ServerSendMessage(player.ConnectionId, BaseGameEntity.MOVEMENT_DATA_CHANNEL, DeliveryMethod.Unreliable, unreliableWriter);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                            try
+                            {
+#endif
+                                ServerSendMessage(player.ConnectionId, BaseGameEntity.MOVEMENT_DATA_CHANNEL, DeliveryMethod.Unreliable, unreliableWriter);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                            }
+                            catch (TooBigPacketException ex)
+                            {
+                                Logging.LogError(LogTag, $"Too Big Packet {unreliableWriter.Length}");
+                                throw ex;
+                            }
+#endif
                             unreliableStateCount = 0;
                             unreliableWriter.SetPosition(posAfterWriteUnreliableStateCount);
                         }
@@ -731,7 +743,20 @@ namespace MultiplayerARPG
                     unreliableWriter.SetPosition(posBeforeWriteUnreliableStateCount);
                     unreliableWriter.Put(unreliableStateCount);
                     unreliableWriter.SetPosition(tempLastPosition);
-                    ServerSendMessage(player.ConnectionId, BaseGameEntity.MOVEMENT_DATA_CHANNEL, DeliveryMethod.Unreliable, unreliableWriter);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    try
+                    {
+#endif
+                        ServerSendMessage(player.ConnectionId, BaseGameEntity.MOVEMENT_DATA_CHANNEL, DeliveryMethod.Unreliable, unreliableWriter);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    }
+                    catch (TooBigPacketException ex)
+                    {
+                        Logging.LogError(LogTag, $"Too Big Packet {unreliableWriter.Length}");
+                        throw ex;
+                    }
+#endif
                 }
             }
         }
