@@ -26,6 +26,21 @@ namespace MultiplayerARPG
         #region Generic Functions
         public static ExtraMovementState ValidateExtraMovementState(this IEntityMovement movement, MovementState movementState, ExtraMovementState extraMovementState)
         {
+            //TODO:#COREEDIT {Force crawling when entity must crawl (e.g., downed players) - check CanCrawl but not other states}
+            // If entity can crawl but cannot do other movement states (sprint/walk), force crawling
+            // This handles cases like downed players who must always crawl
+            if (extraMovementState != ExtraMovementState.IsCrawling &&
+                !movementState.Has(MovementState.IsUnderWater) &&
+                !movementState.Has(MovementState.IsClimbing) &&
+                movement.Entity.CanCrawl() &&
+                !movement.Entity.CanSprint() &&
+                !movement.Entity.CanWalk() &&
+                !movement.Entity.CanCrouch())
+            {
+                return ExtraMovementState.IsCrawling;
+            }
+            //TODO:#COREEDIT {Force crawling when entity must crawl (e.g., downed players) - check CanCrawl but not other states}
+
             // Movement state can affect extra movement state
             if (movementState.Has(MovementState.IsUnderWater) ||
                 movementState.Has(MovementState.IsClimbing))

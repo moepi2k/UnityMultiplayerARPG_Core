@@ -334,6 +334,21 @@ namespace MultiplayerARPG.GameData.Model.Playables
                 PreviousExtraMovementState = ExtraMovementState;
             }
 
+            //TODO:#COREEDIT {Sheat idle and move state}
+            private bool _isWeaponsSheathed;
+            public bool IsWeaponsSheathed
+            {
+                get { return _isWeaponsSheathed; }
+                set
+                {
+                    if (_isWeaponsSheathed == value)
+                        return;
+                    _isWeaponsSheathed = value;
+                    HasChanges = true;
+                }
+            }
+            //TODO:#COREEDIT {Sheat idle and move state}
+
             public void Reset()
             {
                 playingStateId = 0;
@@ -595,6 +610,10 @@ namespace MultiplayerARPG.GameData.Model.Playables
                 SetBaseState(StateHash.Generate(CLIP_DASH_START), defaultAnimations.dashStartState);
                 SetBaseState(StateHash.Generate(CLIP_DASH_LOOP), defaultAnimations.dashLoopState);
                 SetBaseState(StateHash.Generate(CLIP_DASH_END), defaultAnimations.dashEndState);
+                //TODO:#COREEDIT {Sheat idle and move state}
+                SetBaseState(StateHash.Generate(CLIP_SHEATHED_IDLE), defaultAnimations.sheathedIdleState);
+                SetMoveStates(string.Empty, MOVE_TYPE_SHEATHED, defaultAnimations.sheathedMoveStates);
+                //TODO:#COREEDIT {Sheat idle and move state}
             }
 
             private void SetupWeaponAnimations(WeaponAnimations weaponAnimations, string overrideWeaponTypeId = "")
@@ -753,6 +772,13 @@ namespace MultiplayerARPG.GameData.Model.Playables
         // Other
         public const string CLIP_HURT = "__Hurt";
         public const string CLIP_DEAD = "__Dead";
+
+        //TODO:#COREEDIT {Sheat idle and move state}
+        // Sheathed
+        public const string SHEATHED_PREFIX = "__Sheathed";
+        public const string CLIP_SHEATHED_IDLE = "__SheathedIdle";
+        public const string MOVE_TYPE_SHEATHED = "__SheathedMove";
+        //TODO:#COREEDIT {Sheat idle and move state}
 
         public Playable Self { get; private set; }
         public PlayableGraph Graph { get; private set; }
@@ -972,13 +998,13 @@ namespace MultiplayerARPG.GameData.Model.Playables
                 {
                     case ExtraMovementState.IsSprinting:
                         if (!stateUpdateData.isMoving)
-                            buildingHash = StateHash.Add(buildingHash, CLIP_IDLE);
+                            buildingHash = StateHash.Add(buildingHash, stateUpdateData.IsWeaponsSheathed ? CLIP_SHEATHED_IDLE : CLIP_IDLE); //TODO:#COREEDIT {Sheat idle and move state}
                         else
                             buildingHash = StateHash.Add(buildingHash, MOVE_TYPE_SPRINT);
                         break;
                     case ExtraMovementState.IsWalking:
                         if (!stateUpdateData.isMoving)
-                            buildingHash = StateHash.Add(buildingHash, CLIP_IDLE);
+                            buildingHash = StateHash.Add(buildingHash, stateUpdateData.IsWeaponsSheathed ? CLIP_SHEATHED_IDLE : CLIP_IDLE); //TODO:#COREEDIT {Sheat idle and move state}
                         else
                             buildingHash = StateHash.Add(buildingHash, MOVE_TYPE_WALK);
                         break;
@@ -995,9 +1021,21 @@ namespace MultiplayerARPG.GameData.Model.Playables
                             buildingHash = StateHash.Add(buildingHash, MOVE_TYPE_CRAWL);
                         break;
                     default:
-                        if (!stateUpdateData.isMoving)
-                            buildingHash = StateHash.Add(buildingHash, CLIP_IDLE);
+                        //TODO:#COREEDIT {Sheat idle and move state}
+                        if (stateUpdateData.IsWeaponsSheathed)
+                        {
+                            if (!stateUpdateData.isMoving)
+                                buildingHash = StateHash.Add(buildingHash, CLIP_SHEATHED_IDLE);
+                            else
+                                buildingHash = StateHash.Add(buildingHash, MOVE_TYPE_SHEATHED);
+                        }
+                        else
+                        {
+                            if (!stateUpdateData.isMoving)
+                                buildingHash = StateHash.Add(buildingHash, CLIP_IDLE);
+                        }
                         break;
+                        //TODO:#COREEDIT {Sheat idle and move state}
                 }
             }
 
@@ -1032,7 +1070,18 @@ namespace MultiplayerARPG.GameData.Model.Playables
             stateUpdateData.SetPreviousMovementStates();
             // State not found, use idle state (with weapon type)
             if (!stateInfos.ContainsKey(playingStateId))
-                playingStateId = StateHash.Generate(stateUpdateData.WeaponTypeId, CLIP_IDLE);
+            //TODO:#COREEDIT {Sheat idle and move state}
+            {
+                // Try sheathed idle first if weapons are sheathed (only use default sheathed animations)
+                if (stateUpdateData.IsWeaponsSheathed)
+                {
+                    playingStateId = StateHash.Generate(stateUpdateData.WeaponTypeId, CLIP_SHEATHED_IDLE);
+                }
+                // Fall back to regular idle
+                if (!stateInfos.ContainsKey(playingStateId))
+                    playingStateId = StateHash.Generate(stateUpdateData.WeaponTypeId, CLIP_IDLE);
+            }
+            //TODO:#COREEDIT {Sheat idle and move state}
             // State still not found, use idle state from default states (without weapon type)
             if (!stateInfos.ContainsKey(playingStateId))
                 playingStateId = StateHash.Generate(CLIP_IDLE);
@@ -1211,6 +1260,11 @@ namespace MultiplayerARPG.GameData.Model.Playables
                 _baseStateUpdateData.ForcePlay = true;
                 _leftHandWieldingStateUpdateData.ForcePlay = true;
             }
+
+            //TODO:#COREEDIT {Sheat idle and move state}
+            _baseStateUpdateData.IsWeaponsSheathed = CharacterModel.IsWeaponsSheathed;
+            _leftHandWieldingStateUpdateData.IsWeaponsSheathed = CharacterModel.IsWeaponsSheathed;
+            //TODO:#COREEDIT {Sheat idle and move state}
 
             #region Update base state and left-hand wielding
             if (!IsFreeze)
