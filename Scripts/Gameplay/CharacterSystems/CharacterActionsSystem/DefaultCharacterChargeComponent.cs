@@ -34,6 +34,14 @@ namespace MultiplayerARPG
         protected CharacterActionComponentManager _manager;
         protected float _chargeStartTime;
         protected float _chargeDuration;
+        /// <summary>
+        /// Exposes the charge start time for server-side validation.
+        /// </summary>
+        public float ChargeStartTime => _chargeStartTime;
+        /// <summary>
+        /// Exposes the charge duration for server-side validation.
+        /// </summary>
+        public float ChargeDuration => _chargeDuration;
         // Logging data
         bool _entityIsPlayer = false;
         BasePlayerCharacterEntity _playerCharacterEntity = null;
@@ -101,7 +109,19 @@ namespace MultiplayerARPG
             MovementRestrictionWhileCharging = Entity.GetMovementRestrictionWhileCharging(weaponItem);
             IsCharging = true;
             _chargeStartTime = Time.unscaledTime;
-            _chargeDuration = weaponItem.ChargeDuration;
+
+            // Use animation clip duration as the charge duration
+            // This ensures the draw animation must complete before firing
+            float animationDuration = 0f;
+            if (tpsModelAvailable)
+                animationDuration = tpsModel.GetWeaponChargeClipDuration(weaponTypeDataId, isLeftHand);
+            else if (vehicleModelAvailable)
+                animationDuration = vehicleModel.GetWeaponChargeClipDuration(weaponTypeDataId, isLeftHand);
+
+            // Use the maximum of weapon's ChargeDuration and animation duration
+            // This ensures the animation completes before allowing attack
+            _chargeDuration = Mathf.Max(weaponItem.ChargeDuration, animationDuration);
+
             if (_entityIsPlayer && IsServer)
                 GameInstance.ServerLogHandlers.LogChargeStart(_playerCharacterEntity);
             OnChargeStart?.Invoke();
@@ -160,6 +180,9 @@ namespace MultiplayerARPG
         [ServerRpc]
         protected void CmdStartCharge(bool isLeftHand)
         {
+            // Server-side validation: prevent restarting charge if already charging
+            if (IsCharging)
+                return;
             ProceedCmdStartCharge(isLeftHand);
         }
 

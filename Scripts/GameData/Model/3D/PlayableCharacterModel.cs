@@ -707,6 +707,22 @@ namespace MultiplayerARPG.GameData.Model.Playables
             Behaviour.StopAction();
             _isDoingAction = false;
         }
+
+        public override float GetWeaponChargeClipDuration(int dataId, bool isLeftHand)
+        {
+            if (TryGetWeaponAnimations(dataId, out WeaponAnimations weaponAnimations))
+            {
+                if (isLeftHand && weaponAnimations.leftHandChargeState.clip != null)
+                    return weaponAnimations.leftHandChargeState.clip.length;
+                if (!isLeftHand && weaponAnimations.rightHandChargeState.clip != null)
+                    return weaponAnimations.rightHandChargeState.clip.length;
+            }
+            if (isLeftHand && defaultAnimations.leftHandChargeState.clip != null)
+                return defaultAnimations.leftHandChargeState.clip.length;
+            if (!isLeftHand && defaultAnimations.rightHandChargeState.clip != null)
+                return defaultAnimations.rightHandChargeState.clip.length;
+            return 0f;
+        }
         #endregion
 
         #region Other animations
