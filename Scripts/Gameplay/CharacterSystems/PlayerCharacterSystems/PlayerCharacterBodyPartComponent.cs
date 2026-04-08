@@ -307,7 +307,7 @@ namespace MultiplayerARPG
             target.SetupEquippingModels(cancellationTokenSource, showingModels, storingModels, unequippingSockets, options[_currentModelIndex].models, CreateFakeEquipPosition(), CreateFakeCharacterItem(), false, 0, OnShowEquipmentModel).Forget();
         }
 
-        private void OnSetup()
+        private void OnSetup(BaseGameEntity target)
         {
             Applying = true;
         }
