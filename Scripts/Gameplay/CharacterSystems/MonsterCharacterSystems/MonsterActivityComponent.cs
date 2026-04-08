@@ -85,7 +85,7 @@ namespace MultiplayerARPG
             base.OnDestroy();
         }
 
-        private void Entity_onNotifyEnemySpotted(BaseCharacterEntity enemy)
+        private void Entity_onNotifyEnemySpotted(BaseCharacterEntity target, BaseCharacterEntity enemy)
         {
             if (Entity.Characteristic != MonsterCharacteristic.Assist)
                 return;
@@ -98,14 +98,25 @@ namespace MultiplayerARPG
             }
         }
 
-        private void Entity_onNotifyEnemySpottedByAlly(BaseCharacterEntity ally, BaseCharacterEntity enemy)
+        private void Entity_onNotifyEnemySpottedByAlly(BaseCharacterEntity target, BaseCharacterEntity ally, BaseCharacterEntity enemy)
         {
             if ((Entity.SummonerEntity != null && Entity.SummonerEntity == ally) ||
                 Entity.Characteristic == MonsterCharacteristic.Assist)
                 Entity.SetAttackTarget(enemy);
         }
 
-        private void Entity_onReceivedDamage(HitBoxPosition position, Vector3 fromPosition, EntityInfo instigator, CombatAmountType combatAmountType, int totalDamage, CharacterItem weapon, BaseSkill skill, int skillLevel, CharacterBuff buff, bool isDamageOverTime)
+        private void Entity_onReceivedDamage(
+            DamageableEntity target,
+            HitBoxPosition position,
+            Vector3 fromPosition,
+            EntityInfo instigator,
+            CombatAmountType combatAmountType,
+            int totalDamage,
+            CharacterItem weapon,
+            BaseSkill skill,
+            int skillLevel,
+            CharacterBuff buff,
+            bool isDamageOverTime)
         {
             if (!instigator.TryGetEntity(out BaseCharacterEntity attackerCharacter))
                 return;
