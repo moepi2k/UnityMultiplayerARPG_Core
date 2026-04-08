@@ -74,7 +74,7 @@ namespace MultiplayerARPG
             AimPosition aimPosition)
         {
             if (onAttackRoutine != null)
-                onAttackRoutine.Invoke(isLeftHand, weapon, simulateSeed, triggerIndex, damageInfo, damageAmounts, aimPosition);
+                onAttackRoutine.Invoke(this, isLeftHand, weapon, simulateSeed, triggerIndex, damageInfo, damageAmounts, aimPosition);
         }
 
         public virtual void OnUseSkillRoutine(
@@ -89,7 +89,7 @@ namespace MultiplayerARPG
             AimPosition aimPosition)
         {
             if (onUseSkillRoutine != null)
-                onUseSkillRoutine.Invoke(skill, level, isLeftHand, weapon, simulateSeed, triggerIndex, damageAmounts, targetObjectId, aimPosition);
+                onUseSkillRoutine.Invoke(this, skill, level, isLeftHand, weapon, simulateSeed, triggerIndex, damageAmounts, targetObjectId, aimPosition);
         }
 
         public virtual void OnLaunchDamageEntity(
@@ -104,7 +104,7 @@ namespace MultiplayerARPG
             AimPosition aimPosition)
         {
             if (onLaunchDamageEntity != null)
-                onLaunchDamageEntity.Invoke(isLeftHand, weapon, simulateSeed, triggerIndex, spreadIndex, damageAmounts, skill, skillLevel, aimPosition);
+                onLaunchDamageEntity.Invoke(this, isLeftHand, weapon, simulateSeed, triggerIndex, spreadIndex, damageAmounts, skill, skillLevel, aimPosition);
         }
 
         public virtual void OnRewardItem(RewardGivenType givenType, BaseItem item, int amount)

@@ -347,7 +347,7 @@ namespace MultiplayerARPG
         public virtual void ReceivingDamage(HitBoxPosition position, Vector3 fromPosition, EntityInfo instigator, Dictionary<DamageElement, MinMaxFloat> damageAmounts, CharacterItem weapon, BaseSkill skill, int skillLevel)
         {
             if (onReceiveDamage != null)
-                onReceiveDamage.Invoke(position, fromPosition, instigator, damageAmounts, weapon, skill, skillLevel);
+                onReceiveDamage.Invoke(this, position, fromPosition, instigator, damageAmounts, weapon, skill, skillLevel);
         }
 
         /// <summary>
@@ -408,7 +408,7 @@ namespace MultiplayerARPG
             }
             CallRpcAppendCombatText(combatAmountType, hitEffectsSourceType, hitEffectsSourceDataId, totalDamage);
             if (onReceivedDamage != null)
-                onReceivedDamage.Invoke(position, fromPosition, instigator, combatAmountType, totalDamage, weapon, skill, skillLevel, buff, isDamageOverTime);
+                onReceivedDamage.Invoke(this, position, fromPosition, instigator, combatAmountType, totalDamage, weapon, skill, skillLevel, buff, isDamageOverTime);
         }
 
         public virtual bool CanReceiveDamageFrom(EntityInfo instigator)

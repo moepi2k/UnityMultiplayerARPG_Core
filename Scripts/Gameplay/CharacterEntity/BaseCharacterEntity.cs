@@ -1186,13 +1186,13 @@ namespace MultiplayerARPG
                 summon.CacheEntity.NotifyEnemySpottedByAlly(this, enemy);
             }
             if (onNotifyEnemySpotted != null)
-                onNotifyEnemySpotted(enemy);
+                onNotifyEnemySpotted(this, enemy);
         }
 
         public virtual void NotifyEnemySpottedByAlly(BaseCharacterEntity ally, BaseCharacterEntity enemy)
         {
             if (onNotifyEnemySpottedByAlly != null)
-                onNotifyEnemySpottedByAlly(ally, enemy);
+                onNotifyEnemySpottedByAlly(this, ally, enemy);
         }
     }
 }

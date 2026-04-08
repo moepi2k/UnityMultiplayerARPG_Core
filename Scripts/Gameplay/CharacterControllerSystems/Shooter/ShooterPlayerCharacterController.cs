@@ -1739,6 +1739,7 @@ namespace MultiplayerARPG
         }
 
         public void OnLaunchDamageEntity(
+            BaseGameEntity target,
             bool isLeftHand,
             CharacterItem weapon,
             int simulateSeed,

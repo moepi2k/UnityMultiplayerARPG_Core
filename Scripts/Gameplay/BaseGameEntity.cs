@@ -414,7 +414,7 @@ namespace MultiplayerARPG
                 {
                     _wasUpdateEntityComponents = isUpdateEntityComponents;
                     if (onIsUpdateEntityComponentsChanged != null)
-                        onIsUpdateEntityComponentsChanged.Invoke(isUpdateEntityComponents);
+                        onIsUpdateEntityComponentsChanged.Invoke(this, isUpdateEntityComponents);
                 }
             }
             using (s_EntityLateUpdateProfilerMarker.Auto())
@@ -491,7 +491,7 @@ namespace MultiplayerARPG
         {
             base.OnNetworkDestroy(reasons);
             if (onNetworkDestroy != null)
-                onNetworkDestroy.Invoke(reasons);
+                onNetworkDestroy.Invoke(this, reasons);
         }
 
         public virtual bool IsHide()

@@ -50,6 +50,7 @@ namespace MultiplayerARPG
         }
 
         protected void OnReceivedDamage(
+            DamageableEntity target,
             HitBoxPosition position,
             Vector3 fromPosition,
             EntityInfo instigator,
