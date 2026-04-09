@@ -164,6 +164,9 @@ namespace MultiplayerARPG
 
         private void LateUpdate()
         {
+            if (_system == null)
+                return;
+
             if (!_system.Complete())
                 return;
 
