@@ -660,14 +660,16 @@ namespace MultiplayerARPG
 
             int tempLastPosition;
 
-            foreach (LiteNetLibPlayer player in Players.Values)
+            foreach (KeyValuePair<long, LiteNetLibPlayer> playerKvp in Players)
             {
-                if (player.ConnectionId == ClientConnectionId)
+                if (playerKvp.Key == ClientConnectionId)
                     continue;
 
-                HashSet<uint> objectIds = player.GetSubscribingObjectIds();
-                foreach (uint objectId in objectIds)
+                LiteNetLibPlayer player = playerKvp.Value;
+                var objectIds = player.GetSubscribingObjectIds();
+                while (objectIds.MoveNext())
                 {
+                    uint objectId = objectIds.Current;
                     if (!_entityMovementDataHandlers.TryGetValue(objectId, out IEntityMovementDataHandler dataHandler))
                         continue;
                     EntityMovementDataBuffers.StateDataWriter.Reset();

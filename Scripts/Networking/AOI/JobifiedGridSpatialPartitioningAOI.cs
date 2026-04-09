@@ -136,29 +136,36 @@ namespace MultiplayerARPG
             using (s_UpdateProfilerMarker.Auto())
             {
                 _spatialObjects.Clear();
-                foreach (LiteNetLibPlayer player in Manager.GetPlayers())
+                var players = Manager.GetPlayers();
+                while (players.MoveNext())
                 {
+                    LiteNetLibPlayer player = players.Current.Value;
                     if (!player.IsReady)
                     {
                         // Don't subscribe if player not ready
                         continue;
                     }
-                    foreach (LiteNetLibIdentity playerObject in player.GetSpawnedObjects())
+                    var playerObjs = player.GetSpawnedObjects();
+                    while (playerObjs.MoveNext())
                     {
+                        LiteNetLibIdentity playerObj = playerObjs.Current.Value;
                         _spatialObjects.Add(new SpatialObject()
                         {
-                            objectId = playerObject.ObjectId,
-                            position = playerObject.transform.position,
+                            objectId = playerObj.ObjectId,
+                            position = playerObj.transform.position,
                         });
                     }
+
                 }
                 _system.UpdateGrid(_spatialObjects);
                 _alwaysVisibleObjects.Clear();
                 NativeList<SpatialObject> queryResult;
                 HashSet<uint> subscribings;
                 LiteNetLibIdentity foundPlayerObject;
-                foreach (LiteNetLibIdentity spawnedObject in Manager.Assets.GetSpawnedObjects())
+                var spawnedObjects = Manager.Assets.GetSpawnedObjects();
+                while (spawnedObjects.MoveNext())
                 {
+                    LiteNetLibIdentity spawnedObject = spawnedObjects.Current.Value;
                     if (spawnedObject == null)
                         continue;
                     if (spawnedObject.AlwaysVisible)
@@ -186,8 +193,10 @@ namespace MultiplayerARPG
                     queryResult.Dispose();
                 }
 
-                foreach (ISpatialObjectComponent component in SpatialObjectContainer.GetValues())
+                var components = SpatialObjectContainer.GetEnumerator();
+                while (components.MoveNext())
                 {
+                    ISpatialObjectComponent component = components.Current.Value;
                     if (component == null)
                         continue;
                     component.ClearSubscribers();
@@ -211,16 +220,20 @@ namespace MultiplayerARPG
                     queryResult.Dispose();
                 }
 
-                foreach (LiteNetLibPlayer player in Manager.GetPlayers())
+                players = Manager.GetPlayers();
+                while (players.MoveNext())
                 {
+                    LiteNetLibPlayer player = players.Current.Value;
                     if (!player.IsReady)
                     {
                         // Don't subscribe if player not ready
                         continue;
                     }
-                    foreach (LiteNetLibIdentity playerObject in player.GetSpawnedObjects())
+                    var playerObjs = player.GetSpawnedObjects();
+                    while (playerObjs.MoveNext())
                     {
-                        if (_playerSubscribings.TryGetValue(playerObject.ObjectId, out subscribings))
+                        LiteNetLibIdentity playerObj = playerObjs.Current.Value;
+                        if (_playerSubscribings.TryGetValue(playerObj.ObjectId, out subscribings))
                         {
                             if (_alwaysVisibleObjects.Count > 0)
                             {
@@ -229,16 +242,16 @@ namespace MultiplayerARPG
                                     subscribings.Add(alwaysVisibleObject);
                                 }
                             }
-                            playerObject.UpdateSubscribings(subscribings);
+                            playerObj.UpdateSubscribings(subscribings);
                             subscribings.Clear();
                         }
                         else if (_alwaysVisibleObjects.Count > 0)
                         {
-                            playerObject.UpdateSubscribings(_alwaysVisibleObjects);
+                            playerObj.UpdateSubscribings(_alwaysVisibleObjects);
                         }
                         else
                         {
-                            playerObject.ClearSubscribings();
+                            playerObj.ClearSubscribings();
                         }
                     }
                 }
