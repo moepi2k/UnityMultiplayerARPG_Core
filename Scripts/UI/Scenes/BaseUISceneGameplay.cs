@@ -206,7 +206,6 @@ namespace MultiplayerARPG
             UICombatText combatText;
             if (!instantiateCombatTextToWorldTransform && combatTextTransform)
             {
-                
                 combatText = PoolSystem.GetInstance(prefab);
                 combatText.transform.SetParent(combatTextTransform);
                 combatText.transform.localScale = Vector3.one;
