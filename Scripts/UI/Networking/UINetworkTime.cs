@@ -15,9 +15,9 @@ namespace MultiplayerARPG
                 BaseGameNetworkManager.Singleton.IsServer)
             {
                 if (textRtt)
-                    textRtt.text = ZString.Concat("RTT: ", BaseGameNetworkManager.Singleton.Rtt.ToString("N0"));
+                    textRtt.text = ZString.Format("RTT: {0:N0}", BaseGameNetworkManager.Singleton.Rtt);
                 if (textServerTimestamp)
-                    textServerTimestamp.text = ZString.Concat("ServerTimestamp: ", BaseGameNetworkManager.Singleton.ServerTimestamp.ToString("N0"));
+                    textServerTimestamp.text = ZString.Format("ServerTimestamp: {0:N0}", BaseGameNetworkManager.Singleton.ServerTimestamp);
                 return;
             }
             if (textRtt)
