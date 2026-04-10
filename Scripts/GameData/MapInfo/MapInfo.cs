@@ -20,7 +20,7 @@ namespace MultiplayerARPG
         [Tooltip("If this is `TRUE`, only duelers can attacks each other, other characters cannot do it, duelers also cannot attacks other")]
         public bool duelersCanAttackEachOtherOnly;
         [Tooltip("If this is `TRUE`, non-summoned monsters with same faction as player/monster will be treated as allies. Keep this `FALSE` to always allow attacking monsters regardless of faction.")]
-        public bool useMonsterFactionAsAlliance;
+        public bool useMonsterFactionAsAlliance = true;
 
         [System.NonSerialized]
         private Dictionary<int, List<WarpPointByCondition>> _cacheRespawnPointsByCondition;
