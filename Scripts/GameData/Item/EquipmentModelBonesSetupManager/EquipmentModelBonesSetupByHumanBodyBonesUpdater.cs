@@ -83,9 +83,6 @@ namespace MultiplayerARPG
             if (!_srcTransforms.isCreated || !_dstTransforms.isCreated)
                 return;
 
-            if (EquipmentModelBonesSetupByHumanBodyBonesUpdateManager.Instance == null)
-                return;
-
             // Register instead of scheduling job
             EquipmentModelBonesSetupByHumanBodyBonesUpdateManager.Instance.Register(_srcTransforms, _dstTransforms);
 #endif
