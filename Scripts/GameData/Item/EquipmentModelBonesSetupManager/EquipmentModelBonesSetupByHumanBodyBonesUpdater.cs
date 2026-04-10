@@ -16,8 +16,8 @@ namespace MultiplayerARPG
 
         public PredefinedBone[] predefinedBones = new PredefinedBone[0];
 
-        private TransformAccessArray _srcTransforms;
-        private TransformAccessArray _dstTransforms;
+        private List<Transform> _srcTransforms = new List<Transform>();
+        private List<Transform> _dstTransforms = new List<Transform>();
 
         private Dictionary<HumanBodyBones, Transform> _predefinedBonesDict;
         public Dictionary<HumanBodyBones, Transform> PredefinedBonesDict
@@ -42,14 +42,8 @@ namespace MultiplayerARPG
             if (src == null || dst == null)
                 return;
 
-            if (_dstTransforms.isCreated)
-                _dstTransforms.Dispose();
-
-            if (_srcTransforms.isCreated)
-                _srcTransforms.Dispose();
-
-            List<Transform> tempSrc = new List<Transform>();
-            List<Transform> tempDst = new List<Transform>();
+            _srcTransforms.Clear();
+            _dstTransforms.Clear();
 
             for (int i = 0; i < (int)HumanBodyBones.LastBone; ++i)
             {
@@ -67,22 +61,16 @@ namespace MultiplayerARPG
                 if (dstTransform != null ||
                     PredefinedBonesDict.TryGetValue((HumanBodyBones)i, out dstTransform))
                 {
-                    tempSrc.Add(srcTransform);
-                    tempDst.Add(dstTransform);
+                    _srcTransforms.Add(srcTransform);
+                    _dstTransforms.Add(dstTransform);
                 }
             }
-
-            _srcTransforms = new TransformAccessArray(tempSrc.ToArray());
-            _dstTransforms = new TransformAccessArray(tempDst.ToArray());
 #endif
         }
 
         private void LateUpdate()
         {
 #if !UNITY_SERVER
-            if (!_srcTransforms.isCreated || !_dstTransforms.isCreated)
-                return;
-
             // Register instead of scheduling job
             EquipmentModelBonesSetupByHumanBodyBonesUpdateManager.Instance.Register(_srcTransforms, _dstTransforms);
 #endif
@@ -91,11 +79,8 @@ namespace MultiplayerARPG
         private void OnDestroy()
         {
 #if !UNITY_SERVER
-            if (_srcTransforms.isCreated)
-                _srcTransforms.Dispose();
-
-            if (_dstTransforms.isCreated)
-                _dstTransforms.Dispose();
+            _srcTransforms.Clear();
+            _dstTransforms.Clear();
 #endif
         }
     }

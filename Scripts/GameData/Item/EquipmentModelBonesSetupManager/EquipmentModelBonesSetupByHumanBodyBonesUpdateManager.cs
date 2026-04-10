@@ -1,11 +1,14 @@
 using System.Collections.Generic;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Jobs;
 
 namespace MultiplayerARPG
 {
+    [DefaultExecutionOrder(int.MaxValue)]
     public class EquipmentModelBonesSetupByHumanBodyBonesUpdateManager : MonoBehaviour
     {
         private static EquipmentModelBonesSetupByHumanBodyBonesUpdateManager _instance;
@@ -30,25 +33,36 @@ namespace MultiplayerARPG
             return gameObject.AddComponent<EquipmentModelBonesSetupByHumanBodyBonesUpdateManager>();
         }
 
-        private readonly List<Transform> _allSrc = new List<Transform>(4096);
-        private Transform[] _cachedSrcArray = new Transform[1024];
-        private readonly List<Transform> _allDst = new List<Transform>(4096);
-        private Transform[] _cachedDstArray = new Transform[1024];
-
-        private TransformAccessArray _srcArray;
+        private readonly List<Transform> _allSrc = new List<Transform>(1024);
+        private readonly List<Transform> _allDst = new List<Transform>(1024);
+        private NativeList<TransformData> _srcArray;
         private TransformAccessArray _dstArray;
-
         private JobHandle _jobHandle;
 
-        public void Register(TransformAccessArray src, TransformAccessArray dst)
+        private void Awake()
         {
-            int length = src.length;
+            _srcArray = new NativeList<TransformData>(1024, Allocator.Persistent);
+            _dstArray = new TransformAccessArray(1024);
+        }
 
-            for (int i = 0; i < length; i++)
-            {
-                _allSrc.Add(src[i].transform);
-                _allDst.Add(dst[i].transform);
-            }
+        private void OnDestroy()
+        {
+            _jobHandle.Complete();
+
+            if (_srcArray.IsCreated)
+                _srcArray.Dispose();
+
+            if (_dstArray.isCreated)
+                _dstArray.Dispose();
+
+            _allSrc.Clear();
+            _allDst.Clear();
+        }
+
+        public void Register(List<Transform> src, List<Transform> dst)
+        {
+            _allSrc.AddRange(src);
+            _allDst.AddRange(dst);
         }
 
         private void LateUpdate()
@@ -56,68 +70,76 @@ namespace MultiplayerARPG
             // Ensure previous job is done
             _jobHandle.Complete();
 
-            if (_allSrc.Count == 0)
-                return;
+            // Prepare empty array
+            int length = _allSrc.Count;
+            _srcArray.Clear();
 
-            // Dispose previous arrays
-            if (_srcArray.isCreated)
-                _srcArray.Dispose();
+            int maxLength = 0;
+            // Push to src list
+            for (int i = length - 1; i >= 0; --i)
+            {
+                Transform srcTransform = _allSrc[i];
+                Transform dstTransform = _allDst[i];
+                if (srcTransform == null || dstTransform == null)
+                {
+                    continue;
+                }
+                _srcArray.Add(new TransformData()
+                {
+                    position = srcTransform.position,
+                    rotation = srcTransform.rotation,
+                    localScale = srcTransform.localScale,
+                });
+                if (maxLength < _dstArray.length)
+                    _dstArray[maxLength] = dstTransform;
+                else
+                    _dstArray.Add(dstTransform);
+                ++maxLength;
+            }
 
-            if (_dstArray.isCreated)
-                _dstArray.Dispose();
+            // Trim stale tail entries so the job only iterates what's needed
+            while (_dstArray.length > maxLength)
+            {
+                _dstArray.RemoveAtSwapBack(_dstArray.length - 1);
+            }
 
-            // Create new arrays (batched)
-            // Make it realloc only when the size is bigger than before, otherwise just copy to cached arrays to avoid GC alloc
-            if (_cachedSrcArray.Length < _allSrc.Count)
-                _cachedSrcArray = new Transform[_allSrc.Count];
-            _allSrc.CopyTo(_cachedSrcArray);
-            if (_cachedDstArray.Length < _allDst.Count)
-                _cachedDstArray = new Transform[_allDst.Count];
-            _allDst.CopyTo(_cachedDstArray);
-
-            _srcArray = new TransformAccessArray(_cachedSrcArray);
-            _dstArray = new TransformAccessArray(_cachedDstArray);
+            _allSrc.Clear();
+            _allDst.Clear();
 
             // Schedule ONE big job
             CopyTransformsJob job = new CopyTransformsJob
             {
-                sourceTransforms = _srcArray
+                sourceTransforms = _srcArray,
             };
 
             _jobHandle = job.Schedule(_dstArray);
-
-            // Clear for next frame
-            _allSrc.Clear();
-            _allDst.Clear();
-        }
-
-        private void OnDestroy()
-        {
-            _jobHandle.Complete();
-
-            if (_srcArray.isCreated)
-                _srcArray.Dispose();
-
-            if (_dstArray.isCreated)
-                _dstArray.Dispose();
         }
 
         [BurstCompile]
         private struct CopyTransformsJob : IJobParallelForTransform
         {
-            public TransformAccessArray sourceTransforms;
+            [ReadOnly]
+            public NativeList<TransformData> sourceTransforms;
 
             public void Execute(int index, TransformAccess destination)
             {
                 if (!destination.isValid)
                     return;
 
-                TransformHandle source = sourceTransforms.GetTransformHandle(index);
+                TransformData source = sourceTransforms[index];
 
                 destination.position = source.position;
                 destination.rotation = source.rotation;
                 destination.localScale = source.localScale;
             }
+        }
+
+        [BurstCompile]
+        private struct TransformData
+        {
+            public float3 position;
+            public quaternion rotation;
+            public float3 localScale;
         }
     }
 }
