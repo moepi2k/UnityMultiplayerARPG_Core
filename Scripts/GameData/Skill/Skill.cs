@@ -50,6 +50,12 @@ namespace MultiplayerARPG
         public StatusEffectApplying[] attackStatusEffects;
         public HarvestType harvestType;
         public IncrementalMinMaxFloat harvestDamageAmount;
+        public SkillKnockback knockbackEffect = new SkillKnockback()
+        {
+            force = 0f,
+            deceleration = 0f,
+            duration = 1f,
+        };
 
         [Category(4, "Buff")]
         public SkillBuffType skillBuffType;
@@ -450,6 +456,15 @@ namespace MultiplayerARPG
             if (TryGetDamageInfo(skillUser, isLeftHand, out DamageInfo damageInfo))
                 return damageInfo.GetDamageTransform(skillUser, isLeftHand);
             return base.GetApplyTransform(skillUser, isLeftHand);
+        }
+
+        public override void OnSkillAttackHit(int skillLevel, EntityInfo instigator, CharacterItem weapon, BaseCharacterEntity target)
+        {
+            base.OnSkillAttackHit(skillLevel, instigator, weapon, target);
+
+            // Knockback Logic
+            if (knockbackEffect.force > 0 && instigator.TryGetEntity(out BaseCharacterEntity attacker))
+                knockbackEffect.ApplyKnockback(attacker, target);
         }
 
         public override bool CanUse(BaseCharacterEntity skillUser, int level, bool isLeftHand, uint targetObjectId, out UITextKeys gameMessage, bool isItem = false)
