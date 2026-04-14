@@ -458,5 +458,13 @@ namespace MultiplayerARPG.GameData.Model.Playables
         [FormerlySerializedAs("leftHandHolsterAnimation")]
         public HolsterAnimation leftHandWeaponSheathingAnimation = new HolsterAnimation();
         public HolsterAnimation leftHandShieldSheathingAnimation = new HolsterAnimation();
+
+        //TODO:#COREEDIT {Idle and move state when sheated}
+        [Header("Sheathed Idle Animations")]
+        [Tooltip("Idle animation to play when weapons are sheathed. If not set, will use default idleState.")]
+        public AnimState sheathedIdleState = new AnimState();
+        [Tooltip("Move animations to play when weapons are sheathed. If not set, will use default moveStates.")]
+        public MoveStates sheathedMoveStates = new MoveStates();
+        //TODO:#COREEDIT {Idle and move state when sheated}
     }
 }

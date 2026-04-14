@@ -1077,6 +1077,11 @@ namespace MultiplayerARPG
         public abstract void PlayActionAnimation(AnimActionType animActionType, int dataId, int index, out bool skipMovementValidation, out bool shouldUseRootMotion, float playSpeedMultiplier, float changeClipLength, float overrideClipLength);
         public abstract void PlaySkillCastClip(int dataId, float duration, out bool skipMovementValidation, out bool shouldUseRootMotion);
         public abstract void PlayWeaponChargeClip(int dataId, bool isLeftHand, out bool skipMovementValidation, out bool shouldUseRootMotion);
+        /// <summary>
+        /// Gets the duration of the weapon charge animation clip.
+        /// Used to ensure the charge animation completes before allowing attack.
+        /// </summary>
+        public abstract float GetWeaponChargeClipDuration(int dataId, bool isLeftHand);
         public abstract void StopActionAnimation();
         public abstract void StopSkillCastAnimation();
         public abstract void StopWeaponChargeAnimation();

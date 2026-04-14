@@ -473,6 +473,29 @@ namespace MultiplayerARPG
         [ServerRpc]
         protected void CmdAttack(long peerTimestamp, WeaponHandlingState weaponHandlingState)
         {
+            // Server-side validation for FireOnRelease weapons
+            // Ensure the charge duration has been met before allowing the attack
+            bool isLeftHand = weaponHandlingState.Has(WeaponHandlingState.IsLeftHand);
+            CharacterItem weapon = Entity.GetAvailableWeapon(ref isLeftHand);
+            IWeaponItem weaponItem = weapon.GetWeaponItem();
+
+            if (weaponItem != null && weaponItem.FireType == FireType.FireOnRelease)
+            {
+                ICharacterChargeComponent chargeComponent = Entity.ChargeComponent;
+                // Check if charge was active and if the required duration was met
+                float chargeElapsed = Time.unscaledTime - chargeComponent.ChargeStartTime;
+                float requiredDuration = chargeComponent.ChargeDuration;
+
+                // If charge duration not met, reject the attack
+                // Use a small tolerance for network timing variations
+                if (chargeElapsed < requiredDuration - 0.1f)
+                {
+                    if (_entityIsPlayer)
+                        GameInstance.ServerLogHandlers.LogAttackTriggerFail(_playerCharacterEntity, 0, 0, ActionTriggerFailReasons.NoValidateData);
+                    return;
+                }
+            }
+
             PreceedCmdAttack(peerTimestamp, weaponHandlingState);
         }
 

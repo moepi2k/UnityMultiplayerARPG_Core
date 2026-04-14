@@ -447,11 +447,16 @@ namespace MultiplayerARPG
             else if (IsUnderWater)
                 _tempMovementState |= MovementState.IsUnderWater;
 
+            //TODO:#COREEDIT {Allow crawling while airborne if entity says it can crawl - needed for downed system}
             if (IsAirborne || IsClimbing || IsUnderWater)
             {
-                if (_tempExtraMovementState == ExtraMovementState.IsCrouching || _tempExtraMovementState == ExtraMovementState.IsCrawling)
+                if (_tempExtraMovementState == ExtraMovementState.IsCrouching)
+                    _tempExtraMovementState = ExtraMovementState.None;
+                // Only reset crawling if entity cannot crawl (allows downed players to stay crawling)
+                if (_tempExtraMovementState == ExtraMovementState.IsCrawling && !Entity.CanCrawl())
                     _tempExtraMovementState = ExtraMovementState.None;
             }
+            //TODO:#COREEDIT {Allow crawling while airborne if entity says it can crawl - needed for downed system}
 
             if (IsClimbing)
                 UpdateClimbMovement(deltaTime);

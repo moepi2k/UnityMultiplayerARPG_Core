@@ -375,6 +375,12 @@ namespace MultiplayerARPG
             shouldUseRootMotion = false;
         }
 
+        public override float GetWeaponChargeClipDuration(int dataId, bool isLeftHand)
+        {
+            // 2D models don't have charge animations by default
+            return 0f;
+        }
+
         public override void StopActionAnimation()
         {
             playingAction = false;

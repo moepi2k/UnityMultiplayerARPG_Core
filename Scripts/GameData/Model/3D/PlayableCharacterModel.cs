@@ -590,13 +590,43 @@ namespace MultiplayerARPG.GameData.Model.Playables
             StartActionCoroutine(PlaySkillCastClipRoutine(state, duration));
         }
 
+        //TODO:#COREEDIT {Play skillcast loop}
         private IEnumerator PlaySkillCastClipRoutine(ActionState castState, float duration)
         {
             _isDoingAction = true;
-            // Waits by skill cast duration
-            yield return new WaitForSecondsRealtime(Behaviour.PlayAction(castState, 1f, 0f, loop: true));
+
+            if (castState == null || castState.clip == null || duration <= 0f)
+            {
+                _isDoingAction = false;
+                yield break;
+            }
+
+            // === CHANGED: Determine loop from the animation clip import setting ===
+            bool shouldLoop = castState.clip.isLooping;
+
+            // === CHANGED: Correct speed to fit duration (only makes sense for non-loop casts) ===
+            float clipLength = castState.GetClipLength(1f);
+            float playSpeedMultiplier = 1f;
+
+            if (!shouldLoop && clipLength > 0f)
+            {
+                playSpeedMultiplier = clipLength / duration;
+                playSpeedMultiplier = Mathf.Clamp(playSpeedMultiplier, 0.05f, 5f);
+            }
+
+            // === CHANGED: Play cast with correct loop setting ===
+            Behaviour.PlayAction(castState, playSpeedMultiplier, 0f, 0f, loop: shouldLoop);
+
+            // === CHANGED: Wait EXACT cast duration ===
+            yield return new WaitForSecondsRealtime(duration);
+
+            // === CHANGED: Stop looping cast after duration ===
+            if (shouldLoop)
+                Behaviour.StopAction();
+
             _isDoingAction = false;
         }
+        //TODO:#COREEDIT {Play skillcast loop}
 
         public override void StopSkillCastAnimation()
         {
@@ -676,6 +706,22 @@ namespace MultiplayerARPG.GameData.Model.Playables
         {
             Behaviour.StopAction();
             _isDoingAction = false;
+        }
+
+        public override float GetWeaponChargeClipDuration(int dataId, bool isLeftHand)
+        {
+            if (TryGetWeaponAnimations(dataId, out WeaponAnimations weaponAnimations))
+            {
+                if (isLeftHand && weaponAnimations.leftHandChargeState.clip != null)
+                    return weaponAnimations.leftHandChargeState.clip.length;
+                if (!isLeftHand && weaponAnimations.rightHandChargeState.clip != null)
+                    return weaponAnimations.rightHandChargeState.clip.length;
+            }
+            if (isLeftHand && defaultAnimations.leftHandChargeState.clip != null)
+                return defaultAnimations.leftHandChargeState.clip.length;
+            if (!isLeftHand && defaultAnimations.rightHandChargeState.clip != null)
+                return defaultAnimations.rightHandChargeState.clip.length;
+            return 0f;
         }
         #endregion
 
