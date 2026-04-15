@@ -7,12 +7,6 @@ namespace MultiplayerARPG
             base.Clean();
             characterDatabases?.Nullify();
             characterDatabases = null;
-<<<<<<< HEAD
-=======
-#if !DISABLE_ADDRESSABLES
-            addressableControllerPrefab = null;
-#endif
->>>>>>> dev
             ItemLockAndExpireComponent = null;
             NpcActionComponent = null;
             BuildingComponent = null;
